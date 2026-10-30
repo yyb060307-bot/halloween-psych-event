@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>그로스 대시보드 · 무의식의 방</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>" />
+  <style>
+    .viz-root {
+      color-scheme: dark;
+      --page: #111110;
+      --surface-1: #1a1a19;
+      --surface-2: #232321;
+      --grid: #33332f;
+      --text-primary: #f0efec;
+      --text-secondary: #c3c2b7;
+      --text-muted: #8f8e86;
+      --series-1: #3987e5; /* blue */
+      --series-2: #d95926; /* orange */
+      --critical: #e66767;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, 'Noto Sans KR', sans-serif; }
+    .viz-root { background: var(--page); color: var(--text-primary); min-height: 100vh; padding: 24px; }
+    h1 { font-size: 1.3rem; margin: 0; }
+    h2 { font-size: 1rem; margin: 0 0 4px; }
+    .hint { color: var(--text-muted); font-size: .8rem; margin: 0 0 16px; }
+    .wrap { max-width: 1200px; margin: 0 auto; }
+    .top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .top h1 { margin-right: auto; }
+    .seg { display: inline-flex; background: var(--surface-1); border-radius: 8px; padding: 3px; }
+    .seg button, .btn {
+      background: none; border: 0; color: var(--text-secondary); font: inherit; font-size: .85rem;
+      padding: 6px 12px; border-radius: 6px; cursor: pointer;
+    }
+    .seg button[aria-pressed=true] { background: var(--surface-2); color: var(--text-primary); }
+    .btn { background: var(--surface-1); }
+    .btn:hover { color: var(--text-primary); }
+    .updated { color: var(--text-muted); font-size: .8rem; }
+
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
+    .kpi { background: var(--surface-1); border-radius: 12px; padding: 16px 18px; }
+    .kpi .label { color: var(--text-secondary); font-size: .85rem; }
+    .kpi .value { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .kpi .note { color: var(--text-muted); font-size: .8rem; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 12px; }
+    .panel { background: var(--surface-1); border-radius: 12px; padding: 18px; overflow-x: auto; }
+    .panel.wide { grid-column: 1 / -1; }
+
+    /* 가로 막대 */
+    .bars { display: flex; flex-direction: column; gap: 10px; }
+    .bar-row { display: grid; grid-template-columns: 130px 1fr 150px; align-items: center; gap: 10px; font-size: .85rem; }
+    .bar-row .name { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar-row .track { position: relative; height: 22px; border-left: 1px solid var(--grid); }
+    .bar-row .fill { height: 100%; background: var(--series-1); border-radius: 0 4px 4px 0; min-width: 2px; }
+    .bar-row .val { font-variant-numeric: tabular-nums; color: var(--text-primary); }
+    .bar-row .val small { color: var(--text-muted); margin-left: 6px; }
+    .bar-row:hover .fill { filter: brightness(1.2); }
+    .drop { display: grid; grid-template-columns: 130px 1fr 150px; gap: 10px; font-size: .75rem; color: var(--text-muted); margin: -6px 0 -4px; }
+    .drop span:nth-child(2) { padding-left: 8px; }
+    .drop .high { color: var(--critical); }
+
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; font-variant-numeric: tabular-nums; }
+    th, td { text-align: right; padding: 7px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; }
+    th { color: var(--text-secondary); font-weight: 500; }
+    .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+    .empty { color: var(--text-muted); font-size: .85rem; padding: 12px 0; }
+
+    .tooltip {
+      position: fixed; pointer-events: none; z-index: 20; display: none;
+      background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--grid);
+      border-radius: 8px; padding: 8px 10px; font-size: .8rem; box-shadow: 0 6px 20px rgba(0,0,0,.4);
+    }
+
+    .login { max-width: 360px; margin: 15vh auto; background: var(--surface-1); padding: 28px; border-radius: 14px; }
+    .login input {
+      width: 100%; margin: 12px 0; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--grid);
+      background: var(--page); color: var(--text-primary); font: inherit;
+    }
+    .login button { width: 100%; padding: 10px; border: 0; border-radius: 8px; background: var(--series-1); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+    .err { color: var(--critical); font-size: .85rem; min-height: 1.2em; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+<div class="viz-root">
+  <form class="login" id="login">
+    <h1>📊 그로스 대시보드</h1>
+    <p class="hint">학생회 관리자 비밀번호를 입력하세요.</p>
+    <input type="password" id="pass" autocomplete="current-password" placeholder="비밀번호" required />
+    <p class="err" id="login-err"></p>
+    <button type="submit">들어가기</button>
+  </form>
+
+  <div class="wrap" id="dash" hidden>
+    <div class="top">
+      <h1>🎃 무의식의 방 · 그로스 대시보드</h1>
+      <div class="seg" id="range" role="group" aria-label="기간">
+        <button data-range="all" aria-pressed="true">전체</button>
+        <button data-range="today" aria-pressed="false">오늘</button>
+        <button data-range="7d" aria-pressed="false">최근 7일</button>
+      </div>
+      <button class="btn" id="refresh">새로고침</button>
+      <span class="updated" id="updated"></span>
+    </div>
+
+    <div class="kpis" id="kpis"></div>
+
+    <div class="grid">
+      <section class="panel wide">
+        <h2>퍼널별 도달 · 이탈률</h2>
+        <p class="hint">단계별 고유 세션 수. 막대 사이 숫자는 직전 단계 대비 이탈률 (30% 이상은 빨간색)</p>
+        <div class="bars" id="funnel"></div>
+      </section>
+
+      <section class="panel">
+        <h2>버튼별 클릭 횟수</h2>
+        <p class="hint">data-track 속성이 붙은 모든 요소. 오른쪽 작은 숫자는 클릭한 고유 세션 수</p>
+        <div class="bars" id="clicks"></div>
+      </section>
+
+      <section class="panel">
+        <h2>A/B 테스트 · 히어로 카피</h2>
+        <p class="hint">A = 호기심 자극 카피, B = 희소성·할인 카피. 구매전환률 = 구매 세션 / 방문 세션</p>
+        <div id="variants"></div>
+      </section>
+
+      <section class="panel">
+        <h2>유입 채널별 전환</h2>
+        <p class="hint">링크에 ?utm_source=instagram 처럼 붙여 배포하면 채널별로 집계됩니다</p>
+        <div id="sources"></div>
+      </section>
+
+      <section class="panel">
+        <h2>상품별 판매</h2>
+        <p class="hint">금액은 서버에서 계산된 값</p>
+        <div id="products"></div>
+      </section>
+
+      <section class="panel">
+        <h2>스크롤 깊이</h2>
+        <p class="hint">페이지의 해당 지점까지 스크롤한 세션 수</p>
+        <div class="bars" id="scroll"></div>
+      </section>
+
+      <section class="panel">
+        <h2>기기별 방문</h2>
+        <p class="hint">방문 세션 기준</p>
+        <div class="bars" id="devices"></div>
+      </section>
+
+      <section class="panel wide">
+        <h2>일별 추이</h2>
+        <p class="hint">한국 시간 기준</p>
+        <div id="daily"></div>
+      </section>
+
+      <section class="panel wide">
+        <h2>주문 목록 (입금 확인용)</h2>
+        <p class="hint">개인정보가 포함되어 있습니다. 행사 종료 후 파기하세요. <button class="btn" id="csv">CSV 다운로드</button></p>
+        <div id="orders"></div>
+      </section>
+    </div>
+  </div>
+  <div class="tooltip" id="tip"></div>
+</div>
+
+<script src="assets/config.js"></script>
+<script>
+(function () {
+  const { SUPABASE_URL, SUPABASE_KEY } = window.APP_CONFIG;
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const num = (n) => Number(n || 0).toLocaleString('ko-KR');
+  const pct = (r) => (r == null ? '–' : (r * 100).toFixed(1) + '%');
+  const won = (n) => num(n) + '원';
+
+  let passcode = sessionStorage.getItem('hw_admin') || '';
+  let range = 'all';
+  let lastOrders = [];
+
+  async function rpc(fn, body) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.status === 403 || res.status === 401) throw new Error('unauthorized');
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
+
+  function since() {
+    if (range === 'all') return null;
+    const kst = new Date(Date.now() + 9 * 36e5);
+    if (range === 'today') {
+      const d = kst.toISOString().slice(0, 10);
+      return new Date(d + 'T00:00:00+09:00').toISOString();
+    }
+    return new Date(Date.now() - 7 * 864e5).toISOString();
+  }
+
+  // 툴팁 (data-tip 속성)
+  const tip = $('#tip');
+  document.addEventListener('mousemove', (e) => {
+    const el = e.target.closest('[data-tip]');
+    if (!el) { tip.style.display = 'none'; return; }
+    tip.innerHTML = el.dataset.tip;
+    tip.style.display = 'block';
+    tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + 'px';
+    tip.style.top = e.clientY + 14 + 'px';
+  });
+
+  function bars(rows, { label, value, sub, tipFn }) {
+    if (!rows.length) return '<div class="empty">아직 데이터가 없어요</div>';
+    const max = Math.max(...rows.map(value), 1);
+    return rows.map((r) => `
+      <div class="bar-row" data-tip="${esc(tipFn ? tipFn(r) : '')}">
+        <div class="name" title="${esc(label(r))}">${esc(label(r))}</div>
+        <div class="track"><div class="fill" style="width:${(value(r) / max) * 100}%"></div></div>
+        <div class="val">${num(value(r))}${sub ? `<small>${esc(sub(r))}</small>` : ''}</div>
+      </div>`).join('');
+  }
+
+  function table(headers, rows) {
+    if (!rows.length) return '<div class="empty">아직 데이터가 없어요</div>';
+    return `<table><thead><tr>${headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  }
+
+  function render(s) {
+    $('#kpis').innerHTML = [
+      ['방문 세션', num(s.visitors), '페이지뷰가 발생한 고유 세션'],
+      ['구매 세션', num(s.buyers), `주문 ${num(s.orders)}건 · ${num(s.quantity)}매`],
+      ['구매전환률', pct(s.conversion_rate), '구매 세션 / 방문 세션'],
+      ['예매 매출', won(s.revenue), '입금 확인 전 금액 포함'],
+    ].map(([l, v, n]) => `<div class="kpi"><div class="label">${l}</div><div class="value">${v}</div><div class="note">${n}</div></div>`).join('');
+
+    // 퍼널: 단계 막대 + 단계 사이 이탈률
+    const f = s.funnel || [];
+    const fmax = Math.max(...f.map((x) => x.sessions), 1);
+    $('#funnel').innerHTML = f.map((x, i) => {
+      const drop = i > 0 ? `<div class="drop"><span></span><span class="${x.dropoff_rate >= 0.3 ? 'high' : ''}">↓ 이탈 ${pct(x.dropoff_rate)}</span><span></span></div>` : '';
+      return drop + `
+        <div class="bar-row" data-tip="${esc(`<b>${esc(x.step)}. ${esc(x.label)}</b><br>세션 ${num(x.sessions)}<br>첫 단계 대비 ${pct(x.from_start_rate)}`)}">
+          <div class="name">${esc(x.step)}. ${esc(x.label)}</div>
+          <div class="track"><div class="fill" style="width:${(x.sessions / fmax) * 100}%"></div></div>
+          <div class="val">${num(x.sessions)}<small>${pct(x.from_start_rate)}</small></div>
+        </div>`;
+    }).join('');
+
+    $('#clicks').innerHTML = bars(s.clicks || [], {
+      label: (r) => r.button, value: (r) => r.clicks, sub: (r) => `${num(r.sessions)}명`,
+      tipFn: (r) => `<b>${esc(r.button)}</b><br>클릭 ${num(r.clicks)}회 · ${num(r.sessions)}세션`,
+    });
+
+    const color = { A: 'var(--series-1)', B: 'var(--series-2)' };
+    $('#variants').innerHTML = table(['변형', '방문', '구매', '전환률'], (s.by_variant || []).map((v) => [
+      `<span class="swatch" style="background:${color[v.variant] || 'var(--text-muted)'}"></span>${esc(v.variant)}`,
+      num(v.visitors), num(v.buyers), `<b>${pct(v.conversion)}</b>`,
+    ]));
+
+    $('#sources').innerHTML = table(['채널', '방문', '구매', '전환률'], (s.by_source || []).map((v) => [
+      esc(v.source), num(v.visitors), num(v.buyers), pct(v.conversion),
+    ]));
+
+    $('#products').innerHTML = table(['상품', '주문', '수량', '매출'], (s.by_product || []).map((p) => [
+      esc(p.product), num(p.orders), num(p.qty), won(p.revenue),
+    ]));
+
+    $('#scroll').innerHTML = bars(s.scroll || [], {
+      label: (r) => String(r.depth).replace('depth_', '').replace(/^0+/, '') + '%',
+      value: (r) => r.sessions,
+      sub: (r) => (s.visitors ? pct(r.sessions / s.visitors) : ''),
+      tipFn: (r) => `${num(r.sessions)}세션이 도달`,
+    });
+
+    $('#devices').innerHTML = bars(s.by_device || [], {
+      label: (r) => ({ mobile: '모바일', tablet: '태블릿', desktop: '데스크톱' }[r.device] || r.device),
+      value: (r) => r.visitors,
+      sub: (r) => (s.visitors ? pct(r.visitors / s.visitors) : ''),
+    });
+
+    $('#daily').innerHTML = table(['날짜', '방문 세션', '구매 세션', '전환률'], (s.daily || []).map((d) => [
+      esc(d.day), num(d.visitors), num(d.buyers), pct(d.visitors ? d.buyers / d.visitors : null),
+    ]));
+
+    $('#updated').textContent = '업데이트 ' + new Date(s.generated_at).toLocaleTimeString('ko-KR');
+  }
+
+  function renderOrders(rows) {
+    lastOrders = rows;
+    $('#orders').innerHTML = table(['시각', '상품', '수량', '금액', '이름', '학번', '연락처', '변형', '채널'], rows.map((o) => [
+      esc(new Date(o.created_at).toLocaleString('ko-KR')), esc(o.product), num(o.quantity), won(o.amount),
+      esc(o.buyer_name), esc(o.student_no), esc(o.phone), esc(o.variant), esc(o.utm_source || '(direct)'),
+    ]));
+  }
+
+  async function load() {
+    try {
+      const [stats, orders] = await Promise.all([
+        rpc('admin_stats', { passcode, since: since() }),
+        rpc('admin_orders', { passcode }),
+      ]);
+      $('#login').hidden = true;
+      $('#dash').hidden = false;
+      render(stats);
+      renderOrders(orders);
+      return true;
+    } catch (err) {
+      if (err.message === 'unauthorized') {
+        sessionStorage.removeItem('hw_admin');
+        $('#dash').hidden = true;
+        $('#login').hidden = false;
+        $('#login-err').textContent = passcode ? '비밀번호가 올바르지 않습니다.' : '';
+      } else {
+        console.error(err);
+        $('#updated').textContent = '불러오기 실패 – 잠시 후 다시 시도';
+      }
+      return false;
+    }
+  }
+
+  $('#login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    passcode = $('#pass').value;
+    if (await load()) sessionStorage.setItem('hw_admin', passcode);
+  });
+
+  $('#range').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-range]');
+    if (!b) return;
+    range = b.dataset.range;
+    document.querySelectorAll('#range button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    load();
+  });
+  $('#refresh').onclick = load;
+
+  $('#csv').onclick = () => {
+    const head = ['created_at', 'product', 'quantity', 'amount', 'buyer_name', 'student_no', 'phone', 'variant', 'utm_source'];
+    const q = (v) => `"${String(v ?? '').replace(/^[=+\-@\t\r]/, "'$&").replace(/"/g, '""')}"`;
+    const csv = '﻿' + [head.join(','), ...lastOrders.map((o) => head.map((h) => q(o[h])).join(','))].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = `orders_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+  };
+
+  if (passcode) load();
+  setInterval(() => { if (!$('#dash').hidden) load(); }, 30000);
+})();
+</script>
+</body>
+</html>

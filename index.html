@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>무의식의 방 · 심리학과 할로윈 나이트</title>
+  <meta name="description" content="심리학과 학생회 할로윈 이벤트. 당신의 무의식이 가장 두려워하는 것은?" />
+  <meta property="og:title" content="무의식의 방 · 심리학과 할로윈 나이트" />
+  <meta property="og:description" content="10월 31일, 당신의 무의식이 깨어납니다. 지금 사전 예매하세요." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎃</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700&display=swap" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <div class="fog"></div>
+
+  <nav class="nav">
+    <a href="#top" class="logo" data-track="nav_logo">🎃 PSY·HALLOWEEN</a>
+    <a href="#program" class="nav-link" data-track="nav_program">프로그램</a>
+    <a href="#shop" class="nav-btn" data-track="nav_buy">예매하기</a>
+  </nav>
+
+  <header id="top" class="hero">
+    <p class="eyebrow">심리학과 학생회 presents</p>
+    <h1>무의식의 방</h1>
+    <p class="sub">The Unconscious Room · Halloween Night 2026</p>
+    <p class="hook" id="hero-hook"></p>
+    <div class="countdown" id="countdown" aria-live="polite"></div>
+    <a href="#shop" class="cta" id="hero-cta" data-track="hero_cta"></a>
+    <p class="meta">📅 10.31(토) 18:00–22:00 &nbsp;·&nbsp; 📍 사회과학관 B1 다목적홀</p>
+  </header>
+
+  <section id="program" class="section">
+    <h2>오늘 밤, 당신을 기다리는 실험들</h2>
+    <div class="grid">
+      <article class="card">
+        <div class="emoji">🩸</div>
+        <h3>로르샤흐 가면 포토존</h3>
+        <p>잉크 얼룩 속에서 무엇이 보이나요? 당신의 답이 곧 당신의 가면이 됩니다.</p>
+      </article>
+      <article class="card">
+        <div class="emoji">💓</div>
+        <h3>공포 반응 실험실</h3>
+        <p>심박수 센서를 차고 공포 영상을 시청! 가장 침착한 참가자에게 상품을.</p>
+      </article>
+      <article class="card">
+        <div class="emoji">🔮</div>
+        <h3>심리 타로 상담소</h3>
+        <p>타로 카드와 투사 검사로 알아보는 나의 그림자(Shadow) 원형.</p>
+      </article>
+      <article class="card">
+        <div class="emoji">🚪</div>
+        <h3>방탈출: 파블로프의 방</h3>
+        <p>종이 울리면 문이 열린다? 조건형성 원리로 탈출하는 15분 미션.</p>
+      </article>
+    </div>
+    <a href="#shop" class="cta ghost" data-track="program_cta">이 실험에 참여하기 →</a>
+  </section>
+
+  <section id="shop" class="section">
+    <h2>사전 예매</h2>
+    <p class="section-sub">현장 구매보다 <b>1,000원 저렴</b>해요. 선착순 120명 한정!</p>
+    <div class="products" id="products"></div>
+  </section>
+
+  <section id="faq" class="section">
+    <h2>자주 묻는 질문</h2>
+    <details data-track="faq_who"><summary>타과생도 참여할 수 있나요?</summary><p>물론이죠! 우리 학교 학생이라면 누구나 환영합니다.</p></details>
+    <details data-track="faq_costume"><summary>코스튬을 꼭 입어야 하나요?</summary><p>자유입니다. 단, 코스튬 착용 시 타로 1회 무료!</p></details>
+    <details data-track="faq_refund"><summary>환불이 가능한가요?</summary><p>10월 30일 23:59까지 학생회 카카오톡 채널로 문의 시 전액 환불됩니다.</p></details>
+  </section>
+
+  <footer class="footer">
+    <p>심리학과 제00대 학생회 · 문의: 카카오톡 채널 <a href="#" data-track="footer_kakao">@psy_council</a></p>
+  </footer>
+
+  <!-- 주문 모달 -->
+  <dialog id="checkout" class="modal">
+    <form id="order-form" method="dialog" novalidate>
+      <button type="button" class="close" id="close-checkout" data-track="checkout_close" aria-label="닫기">×</button>
+      <h3>예매 정보 입력</h3>
+      <div class="selected" id="selected-item"></div>
+      <label>수량
+        <div class="qty">
+          <button type="button" id="qty-minus" data-track="qty_minus">−</button>
+          <input id="qty" name="quantity" type="number" min="1" max="10" value="1" readonly />
+          <button type="button" id="qty-plus" data-track="qty_plus">+</button>
+        </div>
+      </label>
+      <label>이름<input name="buyer_name" required maxlength="30" autocomplete="name" placeholder="홍길동" /></label>
+      <label>학번<input name="student_no" required inputmode="numeric" pattern="[0-9]{6,10}" placeholder="20261234" /></label>
+      <label>연락처<input name="phone" required inputmode="tel" pattern="01[0-9]-?[0-9]{3,4}-?[0-9]{4}" placeholder="010-1234-5678" /></label>
+      <label class="agree"><input type="checkbox" name="agree" required /> 개인정보(이름·학번·연락처) 수집·이용에 동의합니다. 행사 종료 후 7일 내 파기됩니다.</label>
+      <div class="total">결제 금액 <b id="total">0원</b></div>
+      <p class="error" id="form-error" role="alert"></p>
+      <button type="submit" class="cta full" id="submit-order" data-track="checkout_submit">예매 완료하기</button>
+    </form>
+    <div id="done" class="done" hidden>
+      <div class="emoji big">👻</div>
+      <h3>예매 신청 완료!</h3>
+      <p>아래 계좌로 <b id="done-amount"></b>을 입금하면 예매가 확정됩니다.<br />입금자명은 <b>이름+학번 뒤 4자리</b>로 해주세요.</p>
+      <p class="account">농협 000-0000-0000-00 (심리학과 학생회)</p>
+      <button type="button" class="cta ghost" id="copy-account" data-track="done_copy_account">계좌번호 복사</button>
+      <button type="button" class="cta ghost" id="share" data-track="done_share">친구에게 공유하기</button>
+    </div>
+  </dialog>
+
+  <script src="assets/config.js"></script>
+  <script src="assets/track.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
